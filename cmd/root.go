@@ -9,14 +9,14 @@ import (
 func newRootCmd(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kubelab",
-		Short: "golang-cli project template demo application",
+		Short: "kubelab provides a set of tools to help you manage your Kubernetes clusters.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
 	}
 
 	cmd.AddCommand(newVersionCmd(version)) // version subcommand
-	cmd.AddCommand(newExampleCmd())        // example subcommand
+	cmd.AddCommand(newMkCertCmd())         // mkcert subcommand
 
 	return cmd
 }

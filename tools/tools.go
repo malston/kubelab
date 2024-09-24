@@ -2,7 +2,8 @@
 
 package tools
 
-// https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
+// https://go.dev/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
+// https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 
 //go:generate go install github.com/golangci/golangci-lint/cmd/golangci-lint
 //go:generate go install mvdan.cc/gofumpt
@@ -22,6 +23,8 @@ import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	// gotestfmt
 	_ "github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt"
+	// counterfeiter
+	_ "github.com/maxbrunsfeld/counterfeiter/v6"
 	// golint
 	_ "golang.org/x/lint/golint"
 	// goimports

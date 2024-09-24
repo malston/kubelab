@@ -1,110 +1,73 @@
 # kubelab
 
-<div align="center">
-A general purpose project template for golang CLI applications
-<br>
-<br>
-This template serves as a starting point for golang commandline applications it is based on golang projects that I consider high quality and various other useful blog posts that helped me understanding golang better.
-<br>
-<br>
-<img src="https://github.com/malston/kubelab/actions/workflows/test.yml/badge.svg" alt="drawing"/>
-<img src="https://github.com/malston/kubelab/actions/workflows/lint.yml/badge.svg" alt="drawing"/>
-<img src="https://pkg.go.dev/badge/github.com/malston/kubelab.svg" alt="drawing"/>
-<img src="https://codecov.io/gh/malston/kubelab/branch/main/graph/badge.svg" alt="drawing"/>
-<img src="https://img.shields.io/github/v/release/malston/kubelab" alt="drawing"/>
-<img src="https://img.shields.io/docker/pulls/malston/kubelab" alt="drawing"/>
-<img src="https://img.shields.io/github/downloads/malston/kubelab/total.svg" alt="drawing"/>
-</div>
+## Overview
 
-# Table of Contents
-<!--ts-->
-   * [kubelab](#kubelab)
-   * [Features](#features)
-   * [Project Layout](#project-layout)
-   * [How to use this template](#how-to-use-this-template)
-   * [Demo Application](#demo-application)
-   * [Makefile Targets](#makefile-targets)
-   * [Contribute](#contribute)
+`kubelab` is a tool designed to simplify and enhance your Kubernetes workflows. It is built using Go and packaged in a lightweight Alpine-based Docker image.
 
-<!-- Added by: morelly_t1, at: Tue 10 Aug 2021 08:54:24 AM CEST -->
+## Prerequisites
 
-<!--te-->
+- Docker
+- Go 1.19 or later
+- Git
 
-# Features
-- [goreleaser](https://goreleaser.com/) with `deb.` and `.rpm` packer and container (`docker.hub` and `ghcr.io`) releasing including `manpages` and `shell completions` and grouped Changelog generation.
-- [golangci-lint](https://golangci-lint.run/) for linting and formatting
-- [Github Actions](.github/worflows) Stages (Lint, Test (`windows`, `linux`, `mac-os`), Build, Release) 
-- [Gitlab CI](.gitlab-ci.yml) Configuration (Lint, Test, Build, Release)
-- [cobra](https://cobra.dev/) example setup including tests
-- [Makefile](Makefile) - with various useful targets and documentation (see Makefile Targets)
-- [Github Pages](_config.yml) using [jekyll-theme-minimal](https://github.com/pages-themes/minimal) (checkout [https://malston.github.io/kubelab/](https://malston.github.io/kubelab/))
-- Useful `README.md` badges
-- [pre-commit-hooks](https://pre-commit.com/) for formatting and validating code before committing
+## Installation
 
-# Project Layout
-* [assets/](https://pkg.go.dev/github.com/malston/kubelab/assets) => docs, images, etc
-* [cmd/](https://pkg.go.dev/github.com/malston/kubelab/cmd)  => commandline configurartions (flags, subcommands)
-* [pkg/](https://pkg.go.dev/github.com/malston/kubelab/pkg)  => packages that are okay to import for other projects
-* [internal/](https://pkg.go.dev/github.com/malston/kubelab/pkg)  => packages that are only for project internal purposes
-- [`tools/`](tools/) => for automatically shipping all required dependencies when running `go get` (or `make bootstrap`) such as `golang-ci-lint` (see: https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module)
-)
-- [`scripts/`](scripts/) => build scripts 
+### Docker
 
-# How to use this template
-```sh
-bash <(curl -s https://raw.githubusercontent.com/malston/kubelab/master/install.sh)
-```
-
-In order to make the CI work you will need to have the following Secrets in your repository defined:
-
-Repository  -> Settings -> Secrets & variables -> `CODECOV_TOKEN`, `DOCKERHUB_TOKEN` & `DOCKERHUB_USERNAME`
-
-# Demo Application
+To build the Docker image, run:
 
 ```sh
-$> kubelab -h
-golang-cli project template demo application
-
-Usage:
-  kubelab [flags]
-  kubelab [command]
-
-Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  example     example subcommand which adds or multiplies two given integers
-  help        Help about any command
-  version     kubelab version
-
-Flags:
-  -h, --help   help for kubelab
-
-Use "kubelab [command] --help" for more information about a command.
+docker build -t kubelab .
 ```
+
+### Go
+
+To build the binary using Go, run:
 
 ```sh
-$> kubelab example 2 5 --add
-7
-
-$> kubelab example 2 5 --multiply
-10
+go build -o kubelab
 ```
 
-# Makefile Targets
+## Usage
+
+### Docker
+
+To run `kubelab` using Docker:
+
 ```sh
-$> make
-bootstrap                      install build deps
-build                          build golang binary
-clean                          clean up environment
-cover                          display test coverage
-docker-build                   dockerize golang application
-fmt                            format go files
-help                           list makefile targets
-install                        install golang binary
-lint                           lint go files
-pre-commit                     run pre-commit hooks
-run                            run the app
-test                           display test coverage
+docker run --rm kubelab
 ```
 
-# Contribute
-If you find issues in that setup or have some nice features / improvements, I would welcome an issue or a PR :)
+### Go
+
+To run `kubelab` directly:
+
+```sh
+./kubelab
+```
+
+## CI/CD
+
+This project uses GitHub Actions for continuous integration and delivery. The pipeline includes the following stages:
+
+- **lint**: Lints the code using `golangci-lint`.
+- **build**: Builds the Go binary.
+- **test**: Runs tests with race detection and code coverage.
+- **release**: Releases the project using `goreleaser`.
+
+## Tools
+
+The project uses several Go tools for development, which are tracked in `tools/tools.go`:
+
+- `golangci-lint`
+- `gofumpt`
+- `gci`
+- `gotestfmt`
+- `goimports`
+- `golint`
+- `gocritic`
+- `counterfeiter`
+
+## License
+
+This project is licensed under the MIT License.
