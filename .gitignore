@@ -1,6 +1,7 @@
 # built artifacts
 /bin
 /dist
+kubelab
 
 # run artifacts
 /si-migrator.yml
