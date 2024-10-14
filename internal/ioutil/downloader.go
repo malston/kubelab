@@ -14,12 +14,9 @@ func NewDownloader() HTTPDownloader {
 }
 
 func (d HTTPDownloader) Download(path, url string, mode os.FileMode) error {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		err := download(path, url)
-		if err != nil {
-			return fmt.Errorf("failed to download mkcert to %s, %v", path, err)
-		}
+	err := download(path, url)
+	if err != nil {
+		return fmt.Errorf("failed to download mkcert to %s, %v", path, err)
 	}
 
 	err = os.Chmod(path, mode)

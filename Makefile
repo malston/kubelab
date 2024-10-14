@@ -24,9 +24,8 @@ bootstrap: ## install build deps
 
 PHONY: test
 test: clean ## display test coverage
-	go test --cover -parallel=1 -v -coverprofile=coverage.out ./...
-	go tool cover -func=coverage.out | sort -rnk3
-	
+	go test -json -v  ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+
 PHONY: clean
 clean: ## clean up environment
 	@rm -rf coverage.out dist/ $(projectname)
@@ -34,7 +33,7 @@ clean: ## clean up environment
 PHONY: cover
 cover: ## display test coverage
 	go test -v -race $(shell go list ./... | grep -v /vendor/) -v -coverprofile=coverage.out
-	go tool cover -func=coverage.out
+	go tool cover -func=coverage.out | sort -rnk3
 
 PHONY: fmt
 fmt: ## format go files

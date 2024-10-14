@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/malston/kubelab/internal/cert"
+	"github.com/malston/kubelab/internal/ioutil"
 	"github.com/spf13/cobra"
 )
 
@@ -59,18 +60,25 @@ func (o *mkCertOptions) run(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	certFileName := certPath + "/" + o.domains[0] + ".crt"
-	keyFileName := certPath + "/" + o.domains[0] + ".key"
-
-	installer := cert.NewMkCertInstaller()
-	err = installer.MkCert(
+	return MakeCert(
 		configPath,
-		certFileName,
-		keyFileName,
+		certPath+"/"+o.domains[0]+".crt",
+		certPath+"/"+o.domains[0]+".key",
 		o.domains...,
 	)
+}
+
+func MakeCert(installDir, certFileName string, keyFileName string, domains ...string) error {
+	c, err := cert.NewMkCertInstaller(
+		ioutil.NewDownloader(),
+	).Install(installDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to install mkcert, %w", err)
+	}
+
+	err = c.MkCert(certFileName, keyFileName, domains)
+	if err != nil {
+		return fmt.Errorf("failed to create certificate, %w", err)
 	}
 
 	if _, err = os.ReadFile(certFileName); err != nil {
@@ -81,5 +89,5 @@ func (o *mkCertOptions) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("error reading %s file, %w", keyFileName, err)
 	}
 
-	return err
+	return nil
 }

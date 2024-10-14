@@ -3,10 +3,10 @@ package cert
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"testing"
 
@@ -36,77 +36,13 @@ func (s *stubExecutor) Execute(cmd string, args ...string) (string, string, erro
 	return s.Stdout.String(), "", nil
 }
 
-func TestMakeCert(t *testing.T) {
-	domains := []string{"example.com"}
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatalf("something went wrong getting home path: %s", err)
-	}
-
-	configDir := fmt.Sprintf("%s/.kubelab", homeDir)
-	if _, err = os.Stat(configDir); os.IsNotExist(err) {
-		err := os.MkdirAll(configDir, os.ModePerm)
-		if err != nil {
-			log.Printf("%s directory already exists, continuing", configDir)
-		}
-	}
-
-	certDir := fmt.Sprintf("%s/%s/ssl", configDir, "test-cluster")
-	if _, err := os.Stat(certDir); os.IsNotExist(err) {
-		err := os.MkdirAll(certDir, os.ModePerm)
-		if err != nil {
-			log.Printf("%s directory already exists, continuing", certDir)
-		}
-	}
-
-	certFileName := certDir + "/" + domains[0] + ".crt"
-	keyFileName := certDir + "/" + domains[0] + ".key"
-
-	type args struct {
-		installDir   string
-		certFileName string
-		keyFileName  string
-		domains      []string
-	}
-	require.NoError(t, err)
-	installer := &MkCertInstaller{
-		&stubExecutor{},
-		ioutil.NewDownloader(),
-	}
-
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "mkcert creates valid cert",
-			args: args{
-				installDir:   configDir,
-				certFileName: certFileName,
-				keyFileName:  keyFileName,
-				domains:      domains,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := installer.MkCert(tt.args.installDir, tt.args.certFileName, tt.args.keyFileName, tt.args.domains...); (err != nil) != tt.wantErr {
-				t.Errorf("MkCert() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestMkCertInstaller_Download(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	path := filepath.Join(tmpDir)
 
 	type fields struct {
-		CommandExecutor CommandExecutor
-		Downloader      Downloader
+		Downloader Downloader
 	}
 	type args struct {
 		path string
@@ -141,11 +77,103 @@ func TestMkCertInstaller_Download(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := MkCertInstaller{
-				CommandExecutor: tt.fields.CommandExecutor,
-				Downloader:      tt.fields.Downloader,
+				Downloader: tt.fields.Downloader,
 			}
 			if err := m.Download(tt.args.path, tt.args.url, tt.args.mode); (err != nil) != tt.wantErr {
 				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestMkCertInstaller_Install(t *testing.T) {
+	type fields struct {
+		mkCert          string
+		Downloader      Downloader
+		CommandExecutor CommandExecutor
+	}
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *MkCertClient
+		wantErr bool
+	}{
+		{
+			name: "installs mkcert",
+			fields: fields{
+				mkCert:          fmt.Sprintf("%s/mkcert", os.TempDir()),
+				Downloader:      ioutil.NewDownloader(),
+				CommandExecutor: &stubExecutor{},
+			},
+			args: args{path: os.TempDir()},
+			want: &MkCertClient{
+				Executable:      fmt.Sprintf("%s/mkcert", os.TempDir()),
+				CommandExecutor: &stubExecutor{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := MkCertInstaller{
+				mkCert:          tt.fields.mkCert,
+				Downloader:      tt.fields.Downloader,
+				CommandExecutor: tt.fields.CommandExecutor,
+			}
+			got, err := m.Install(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Install() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Install() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMkCertClient_MkCert(t *testing.T) {
+	type fields struct {
+		Executable      string
+		CommandExecutor CommandExecutor
+	}
+	type args struct {
+		certFileName string
+		keyFileName  string
+		domains      []string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "creates valid cert",
+			fields: fields{
+				Executable:      fmt.Sprintf("%s/mkcert", os.TempDir()),
+				CommandExecutor: &stubExecutor{},
+			},
+			args: args{
+				certFileName: fmt.Sprintf("%s/cert.pem", os.TempDir()),
+				keyFileName:  fmt.Sprintf("%s/key.pem", os.TempDir()),
+				domains:      []string{"example.com"},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := MkCertClient{
+				Executable:      tt.fields.Executable,
+				CommandExecutor: tt.fields.CommandExecutor,
+			}
+			if err := c.MkCert(tt.args.certFileName, tt.args.keyFileName, tt.args.domains); (err != nil) != tt.wantErr {
+				t.Errorf("MkCert() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

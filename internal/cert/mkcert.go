@@ -5,13 +5,18 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/malston/kubelab/internal/ioutil"
 	internalos "github.com/malston/kubelab/internal/os"
 )
 
 type MkCertInstaller struct {
-	CommandExecutor
+	mkCert string
 	Downloader
+	CommandExecutor
+}
+
+type MkCertClient struct {
+	Executable string
+	CommandExecutor
 }
 
 type CommandExecutor interface {
@@ -22,13 +27,30 @@ type Downloader interface {
 	Download(path, url string, mode os.FileMode) error
 }
 
-func NewMkCertInstaller() *MkCertInstaller {
+func NewMkCertInstaller(dl Downloader) *MkCertInstaller {
 	return &MkCertInstaller{
+		Downloader:      dl,
 		CommandExecutor: &internalos.ShellExecutor{},
-		Downloader:      ioutil.NewDownloader(),
 	}
 }
 
+// Install installs mkcert to the given path
+func (m MkCertInstaller) Install(path string) (*MkCertClient, error) {
+	executable := fmt.Sprintf("%s/mkcert", path)
+	err := m.Download(
+		executable,
+		fmt.Sprintf("https://dl.filippo.io/mkcert/latest?for=%s/%s",
+			runtime.GOOS,
+			runtime.GOARCH),
+		0o755)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download mkcert to %w", err)
+	}
+
+	return &MkCertClient{Executable: executable, CommandExecutor: m.CommandExecutor}, nil
+}
+
+// Download mkcert to the given path
 func (m MkCertInstaller) Download(path, url string, mode os.FileMode) error {
 	err := m.Downloader.Download(path, url, mode)
 	if err != nil {
@@ -38,21 +60,9 @@ func (m MkCertInstaller) Download(path, url string, mode os.FileMode) error {
 }
 
 // MkCert invokes mkcert to create a new certificate valid for a given list of domain names
-func (m MkCertInstaller) MkCert(installDir string, certFileName string, keyFileName string, domains ...string) error {
-	mkCert := fmt.Sprintf("%s/mkcert", installDir)
-	_, err := os.Stat(mkCert)
-	if os.IsNotExist(err) {
-		dlErr := m.Download(mkCert, fmt.Sprintf("https://dl.filippo.io/mkcert/latest?for=%s/%s", runtime.GOOS, runtime.GOARCH), 0o755)
-		if dlErr != nil {
-			return fmt.Errorf("failed to download mkcert to %s, %v", installDir, dlErr)
-		}
-		return m.MkCert(installDir, certFileName, keyFileName, domains...)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to stat mkcert: %w", err)
-	}
-	_, _, err = m.Execute(
-		mkCert,
+func (c MkCertClient) MkCert(certFileName string, keyFileName string, domains []string) error {
+	_, _, err := c.Execute(
+		c.Executable,
 		append([]string{
 			"-cert-file",
 			certFileName,
@@ -60,6 +70,5 @@ func (m MkCertInstaller) MkCert(installDir string, certFileName string, keyFileN
 			keyFileName,
 		}, domains...)...,
 	)
-
 	return err
 }
